@@ -1,0 +1,63 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: "Проверка Создания директории src"
+      stat:
+        path: "/var/www/weather-app/src"
+      register: src_dir
+
+    - name: "Assert для директории src"
+      assert:
+        that:
+          - src_dir.stat.exists
+          - src_dir.stat.isdir
+        fail_msg: "Ошибка! Директория /var/www/weather-app/src не создана"
+
+    - name: "Проверка Создания директории logs"
+      stat:
+        path: "/var/www/weather-app/logs"
+      register: src_dir
+
+    - name: "Assert для директории logs"
+      assert:
+        that:
+          - src_dir.stat.exists
+          - src_dir.stat.isdir
+        fail_msg: "Ошибка! Директория /var/www/weather-app/logs не создана"
+
+    - name: "Проверка Создания директории static"
+      stat:
+        path: "/var/www/weather-app/static"
+      register: src_dir
+
+    - name: "Assert для директории static"
+      assert:
+        that:
+          - src_dir.stat.exists
+          - src_dir.stat.isdir
+        fail_msg: "Ошибка! Директория /var/www/weather-app/static не создана"
+
+    - name: "Проверка Создания файла .env"
+      stat:
+        path: "/var/www/weather-app/src/.env"
+      register: env_file
+
+    - name: "Assert Создания файла .env"
+      assert:
+        that:
+          - src_dir.stat.exists
+        fail_msg: "Ошибка! Файл .env не создан"
+
+    - name: "Проверка установки NodeJS"
+      command: node -v
+      register: node_version
+  
+    - name: "Assert установки NodeJS"
+      assert:
+        that:
+          - node_version.rc == 0
+        fail_msg: "Ошибка! NodeJS не установлен"
+        success_msg: "NodeJS ({{ node_version.stdout }}) работает на хосте {{ inventory_hostname }}"

@@ -1,0 +1,7 @@
+---
+- name: Converge
+  hosts: all
+  gather_facts: true
+  become: true # Disable if your role does not rely on facts
+  roles:
+    - role: weather_app

@@ -1,0 +1,10 @@
+---
+- name: "Restart Notification"
+  debug:
+    msg: "Сервис перезапущен на сервере {{ inventory_hostname }}"
+  listen: "Refresh ENV"
+
+- name: "Reset Cache"
+  debug:
+    msg: "Сброшен кэш для {{ inventory_hostname }}"
+  listen: "Refresh ENV"

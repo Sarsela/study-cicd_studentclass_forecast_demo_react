@@ -1,0 +1,74 @@
+---
+# БЛОК Создание настройка ОС
+- name: "Блок Настройки ОС семейства RedHat - CentOS"
+  block:
+    - name: "Установка Пакетов ОС CentOS"
+      yum:
+        name: "{{ common_packages + ['epel-release'] }}"
+        state: present
+        update_cache: yes
+  when: ansible_os_family == "RedHat"
+
+- name: "Блок Настройки ОС семейства Debian - Ubuntu"
+  block:
+    - name: "Установка Пакетов ОС Debian"
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+        update_cache: yes
+  when: ansible_os_family == "Debian"
+
+# БЛОК Создание служебных директорий
+- name: "Создание служебных директорий"
+  file: 
+    path: "{{ item.path }}"
+    state: directory
+    mode: "{{ item.mode }}"
+    owner: "{{ ansible_user }}"
+  loop: "{{ app_structure }}"
+
+
+# 🛑🛑🛑 НОВЫЙ БЛОК: ДОСТАВКА И СБОРКА КОДА (НАЧАЛО) 🛑🛑🛑
+- name: "Доставка и распаковка CI/CD архива с раннера"
+  ansible.builtin.unarchive:
+    src: "{{ playbook_dir }}/../weather-report-app.zip"
+    dest: "{{ app_structure[0].path }}"
+    remote_src: no
+    owner: "{{ ansible_user }}"
+
+- name: "Установка зависимостей NPM"
+  community.general.npm:
+    path: "{{ app_structure[0].path }}"
+    state: present
+# 🛑🛑🛑 НОВЫЙ БЛОК: ДОСТАВКА И СБОРКА КОДА (КОНЕЦ) 🛑🛑🛑
+
+
+# БЛОК Создание шаблонизации
+- name: Создание env файла
+  template:
+    src: env.j2
+    dest: "{{ app_structure[0].path }}/.env"
+  notify: "Refresh ENV"
+
+- name: Проверка установки Node js
+  command: node -v
+  register: node_version
+  changed_when: false
+
+- name: Вывод версии Node JS в консоль
+  debug:
+    msg: "Установлена версия NodeJS: {{ node_version.stdout }} на сервере {{ inventory_hostname }}"
+
+
+# 🛑🛑🛑 НОВЫЙ БЛОК: ФОНОВЫЙ ЗАПУСК ПРИЛОЖЕНИЯ (НАЧАЛО) 🛑🛑🛑
+- name: "Остановка старой версии приложения (Идемпотентность)"
+  command: pkill node
+  failed_when: false
+
+- name: "Простой фоновый запуск новой версии (nohup)"
+  shell: "nohup npm start > application.log 2>&1 &"
+  args:
+    chdir: "{{ app_structure[0].path }}"
+  async: 10
+  poll: 0
+# 🛑🛑🛑 НОВЫЙ БЛОК: ФОНОВЫЙ ЗАПУСК ПРИЛОЖЕНИЯ (КОНЕЦ) 🛑🛑🛑

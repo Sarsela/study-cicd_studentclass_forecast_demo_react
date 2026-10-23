@@ -1,0 +1,12 @@
+---
+common_packages:
+  - curl
+  - git
+  - zip
+  - unzip
+  - nodejs
+  - npm
+app_structure:
+  - { path: "/var/www/weather-app/src", mode: "0755" }
+  - { path: "/var/www/weather-app/logs", mode: "0777" }
+  - { path: "/var/www/weather-app/static", mode: "0755" }

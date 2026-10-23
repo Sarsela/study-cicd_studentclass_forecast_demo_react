@@ -1,0 +1,37 @@
+---
+dependency:
+  name: galaxy
+
+driver:
+  name: docker
+
+platforms:
+  - name: ubuntu-test
+    image: geerlingguy/docker-ubuntu2404-ansible:latest
+    pre_build_image: true
+    privileged: true
+  
+  - name: cent-os-test
+    image: geerlingguy/docker-rockylinux10-ansible:latest
+    pre_build_image: true
+    privileged: true
+
+provisioner:
+  name: ansible
+  playbooks:
+    converge: converge.yml
+    verify: verify.yml
+  inventory:
+    group_vars:
+      all:
+        ansible_user: "root"
+        app_port: 8080
+        app_mode: "mode"
+        weather_api_key: "key"
+
+  env:
+    ANSIBLE_ROLES_PATH: "../../../"
+    ANSIBLE_CONFIG: "../../../ansible.cfg"
+
+verifier:
+  name: ansible

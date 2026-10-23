@@ -1,0 +1,6 @@
+- name: Подготовка Серверов
+  hosts: all
+  become: yes # root 
+
+  roles:
+    - weather_app
