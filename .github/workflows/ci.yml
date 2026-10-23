@@ -1,0 +1,88 @@
+name: MY REACT CICD
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  test-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: скачивание кода
+        uses: actions/checkout@v4
+
+      - name: Установка NODEJS
+        uses: actions/setup-nodejs@v4
+        with:
+          node-version: '22.x'
+
+      - name: Установка пакетов и проведение тестов
+        working-directory: ./backend
+        run: |
+          npm ci
+          npm test
+
+  buils-and-pack:
+    needs: test-backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: скачивание кода
+        uses: actions/checkout@v4
+
+      - name: скачивание nodejs
+        uses: actions/setup-nodejs@v4
+        with:
+          node-version: '22.x'
+
+      - name: сборка реакт
+        working-directory: ./frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Слияние и Упаковка Артефакта
+        run: |
+          mkdir -p ./backend/public
+          rm -rf ./backend/public/*
+          cp -r ./frontend/dist/* ./backend/public/
+          
+          sudo apt-get update && sudo apt-get install -y zip
+          cd backend
+          zip -r ../weather-report-app.zip .
+
+      - name: Сохранение Артефакта
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-build
+          path: weather-report-app.zip
+          retention-days: 7
+
+  deploy:
+    needs: buils-and-pack
+    runs-on: ubuntu-latest
+    steps:
+      - name: Скачивание кода
+        uses: actions/checkout@v4
+
+      - name: скачивание артифакта
+        uses: actions/download-artifact@v4
+        with:
+          name: app-build
+          path: .
+
+      - name: Загружение ключей SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Установка Ансибл
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible
+
+      - name: Запуск Ансибл
+        working-directory: ./ansible
+        run: |
+          echo "${{ secrets.VAULT_PASSWORD }}" > .vault_pass.txt
+          ansible-playbook -i inventory.ini deploy.yml --vault-password-file .vault_pass.txt -vvv
+          rm .vault_pass.txt
